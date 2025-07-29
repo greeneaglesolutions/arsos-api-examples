@@ -1,0 +1,15 @@
+{
+  "name": "curtailment-example-js",
+  "version": "1.0.0",
+  "description": "Curtailment example script in JavaScript",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": ["api", "client", "curtailment"],
+  "author": "",
+  "license": "MIT"
+} 
