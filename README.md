@@ -29,7 +29,7 @@ The main goal of this repository is to:
 
 1. **Clone the repository**:
    ```bash
-   git clone git@bitbucket.org:greeneaglesolutions/arsos-api-examples.git
+   git clone git@github.com:greeneaglesolutions/arsos-api-examples.git
    cd arsos-api-examples
    ```
 
