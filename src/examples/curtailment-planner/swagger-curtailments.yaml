@@ -1,0 +1,614 @@
+openapi: 3.0.3
+info:
+  title: ARSOS Curtailments API
+  description: |
+    API for managing curtailments on the ARSOS platform.
+
+    ## Authentication
+
+    1. Call **POST /auth** with your credentials to obtain a `token` and a `refreshToken`.
+    2. Copy the `token` value from the response.
+    3. Click the **Authorize** button (lock icon) at the top of this page and paste the token into the **Value** field.
+    4. From that point on, all requests will automatically include the token.
+    5. When the token expires, call **POST /auth/token** with your `refreshToken` to get a new one.
+
+  version: 1.0.0
+  contact:
+    name: GES Support
+
+servers:
+  - url: "{apiUrl}"
+    description: Configurable ARSOS server
+    variables:
+      apiUrl:
+        default: https://api.arsos.io
+        description: API base URL. Change this value to target a different environment (staging, development, etc.)
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Auth
+    description: Authentication and token management
+  - name: Curtailment
+    description: Curtailment management (power limitation schedules)
+  - name: Asset
+    description: Asset queries (sites)
+
+paths:
+  /auth:
+    post:
+      tags:
+        - Auth
+      summary: Login - Obtain JWT token
+      description: |
+        Authenticates the user with email and password.
+        Returns a JWT token and a refresh token.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+            example:
+              user: "user@company.com"
+              pass: "myPassword123"
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              example:
+                user: "user@company.com"
+                token: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyQGNvbXBhbnkuY29tIiwi..."
+                refreshToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyQGNvbXBhbnkuY29tIiwi..."
+        "401":
+          description: Invalid credentials
+
+  /auth/token:
+    post:
+      tags:
+        - Auth
+      summary: Refresh JWT token
+      description: |
+        Renews the JWT token using the refresh token obtained during login.
+        Use this when the JWT token has expired but the refresh token is still valid.
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRefreshRequest"
+            example:
+              refreshToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyQGNvbXBhbnkuY29tIiwi..."
+      responses:
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              example:
+                user: "user@company.com"
+                token: "eyJhbGciOiJIUzUxMiJ9.new_jwt_token..."
+                refreshToken: "eyJhbGciOiJIUzUxMiJ9.new_refresh_token..."
+        "401":
+          description: Refresh token expired or revoked
+
+  /curtailment/csv:
+    post:
+      tags:
+        - Curtailment
+      summary: Upload curtailments from CSV file
+      description: |
+        Uploads a CSV file with curtailment schedules.
+
+        **CSV format:**
+        - Delimiter: `;` (semicolon)
+        - Columns: `Site;StartsAt;EndsAt;PowerInMW`
+
+        **Date format:** `yyyy/MM/dd HH:mm` (local time — the site's timezone is applied automatically).
+
+        **Decimal separator:** Both `.` and `,` are accepted for PowerInMW.
+
+        **Example CSV content:**
+        ```
+        Site;StartsAt;EndsAt;PowerInMW
+        PARK_MyPark;2026/03/25 08:00;2026/03/25 12:00;5.0
+        PARK_MyPark;2026/03/26 06:00;2026/03/26 10:00;3.5
+        ```
+
+        **Error codes returned when a row fails validation:**
+
+        | Code | Name | Description |
+        |------|------|-------------|
+        | 0 | OK | No error |
+        | 1 | SiteNameDoesNotExist | The site name was not found |
+        | 2 | SiteNameDuplicated | Multiple sites match the same name |
+        | 3 | StartsAtInvalidDateFormat | StartsAt does not match `yyyy/MM/dd HH:mm` |
+        | 4 | EndsAtInvalidDateFormat | EndsAt does not match `yyyy/MM/dd HH:mm` |
+        | 5 | StartsAtGreaterThanEndsAt | Start date is equal to or later than end date |
+        | 6 | RatedPowerExceeds | Power exceeds the site's rated power |
+        | 7 | SiteNameEmpty | Site column is empty |
+        | 8 | StartsAtEmpty | StartsAt column is empty |
+        | 9 | EndsAtEmpty | EndsAt column is empty |
+        | 10 | PowerEmpty | PowerInMW column is empty or not a valid number |
+      operationId: uploadCurtailmentCsv
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file with curtailment schedules
+              required:
+                - file
+      responses:
+        "200":
+          description: Curtailments processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadCurtailmentsResponse"
+              example:
+                schedules:
+                  - row: 1
+                    id: "curt_abc123"
+                    site: "PARK_MyPark"
+                    sitePath: "PARK_MyPark"
+                    startsAt: "2026-03-25T07:00:00Z"
+                    endsAt: "2026-03-25T11:00:00Z"
+                    timeZone: "Europe/Madrid"
+                    power: 5.0
+                    timeLeft: 14400
+                errors:
+                  - row: 2
+                    site: "PARK_Unknown"
+                    errorCode: 1
+                  - row: 3
+                    site: "PARK_MyPark"
+                    errorCode: 3
+                  - row: 4
+                    site: "PARK_MyPark"
+                    errorCode: 5
+                  - row: 5
+                    site: ""
+                    errorCode: 7
+                  - row: 6
+                    site: "PARK_MyPark"
+                    errorCode: 10
+        "400":
+          description: Invalid CSV file or format errors
+
+  /curtailment/by-site:
+    post:
+      tags:
+        - Curtailment
+      summary: Get curtailments by site
+      description: |
+        Returns pending curtailments for the specified sites.
+        Supports pagination.
+      operationId: getCurtailmentsBySite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetCurtailmentsRequest"
+            example:
+              sites:
+                - "PARK_MyPark"
+                - "PARK_AnotherPark"
+              pageSize: 20
+              expanded: []
+      responses:
+        "200":
+          description: Curtailments grouped by site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetCurtailmentsResponse"
+              example:
+                paging:
+                  total: 2
+                  count: 2
+                data:
+                  - sitePath: "PARK_MyPark"
+                    siteLabel: "My Wind Park"
+                    paging:
+                      total: 1
+                      count: 1
+                    data:
+                      - id: "curt_abc123"
+                        sitePath: "PARK_MyPark"
+                        siteLabel: "My Wind Park"
+                        isActive: false
+                        timeZone: "Europe/Madrid"
+                        startsAt: "2026-03-25T08:00:00Z"
+                        endsAt: "2026-03-25T12:00:00Z"
+                        power: 5.0
+                        timeLeft: 14400
+                        lastModified: 1711324800
+                  - sitePath: "PARK_AnotherPark"
+                    siteLabel: "Another Solar Park"
+                    paging:
+                      total: 1
+                      count: 1
+                    data:
+                      - id: "curt_ghi789"
+                        sitePath: "PARK_AnotherPark"
+                        siteLabel: "Another Solar Park"
+                        isActive: false
+                        timeZone: "Europe/Madrid"
+                        startsAt: "2026-03-26T06:00:00Z"
+                        endsAt: "2026-03-26T10:00:00Z"
+                        power: 3.5
+                        timeLeft: 14400
+                        lastModified: 1711324800
+        "400":
+          description: Invalid request
+
+  /curtailment/site/{sitePath}/{idCurtailment}:
+    delete:
+      tags:
+        - Curtailment
+      summary: Delete a curtailment
+      description: |
+        Deletes a specific curtailment from a site.
+        You need the `sitePath` and the curtailment `id`, both available
+        from the **POST /curtailment/by-site** response.
+      operationId: deleteCurtailment
+      parameters:
+        - name: sitePath
+          in: path
+          required: true
+          description: Site identifier (e.g. PARK_MyPark)
+          schema:
+            type: string
+          example: "PARK_MyPark"
+        - name: idCurtailment
+          in: path
+          required: true
+          description: Curtailment ID to delete
+          schema:
+            type: string
+          example: "curt_abc123"
+      responses:
+        "200":
+          description: Curtailment deleted successfully
+        "400":
+          description: Site does not exist
+        "404":
+          description: Curtailment not found
+        "500":
+          description: Internal server error
+
+  /asset/site:
+    get:
+      tags:
+        - Asset
+      summary: Get all sites
+      description: |
+        Returns all sites accessible to the authenticated user, sorted by creation date (newest first).
+
+        Use the `id` field from each site as the `sitePath` parameter in curtailment calls.
+      operationId: getAllSites
+      responses:
+        "200":
+          description: List of sites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SiteModel"
+              example:
+                - id: "PARK_MyPark"
+                  name: "My Wind Park"
+                  assetType: "WindFarm"
+                  latitude: 40.4168
+                  longitude: -3.7038
+                  ratedPower: 50000
+                  countryCode: "ES"
+                  countryName: "Spain"
+                  customerName: "Energy Company Ltd."
+                  timezone: "Europe/Madrid"
+                  children: []
+                - id: "PARK_AnotherPark"
+                  name: "Another Solar Park"
+                  assetType: "PVSite"
+                  latitude: 37.3891
+                  longitude: -5.9845
+                  ratedPower: 30000
+                  countryCode: "ES"
+                  countryName: "Spain"
+                  customerName: "Solar Corp"
+                  timezone: "Europe/Madrid"
+                  children: []
+        "401":
+          description: Not authenticated
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Enter the JWT token obtained from POST /auth.
+        Click Authorize and paste the token value into the field.
+
+  schemas:
+    AuthRequest:
+      type: object
+      required:
+        - user
+        - pass
+      properties:
+        user:
+          type: string
+          description: User email
+          example: "user@company.com"
+        pass:
+          type: string
+          description: User password
+          format: password
+          example: "myPassword123"
+
+    AuthRefreshRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token obtained during login
+          example: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyQGNvbXBhbnkuY29tIiwi..."
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          type: string
+          description: Authenticated user email
+        token:
+          type: string
+          description: JWT token to authenticate subsequent requests
+        refreshToken:
+          type: string
+          nullable: true
+          description: Refresh token to renew the JWT when it expires
+
+    GetCurtailmentsRequest:
+      type: object
+      required:
+        - sites
+        - pageSize
+      properties:
+        sites:
+          type: array
+          items:
+            type: string
+          description: List of site paths to query curtailments for
+        pageSize:
+          type: integer
+          description: Number of results per page
+          example: 20
+        expanded:
+          type: array
+          items:
+            type: string
+          description: Expanded fields (optional)
+
+    GetCurtailmentsResponse:
+      type: object
+      properties:
+        paging:
+          $ref: "#/components/schemas/Paging"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CurtailmentSiteGroup"
+
+    CurtailmentSiteGroup:
+      type: object
+      properties:
+        sitePath:
+          type: string
+          description: Site identifier
+        siteLabel:
+          type: string
+          description: Site display name
+        paging:
+          $ref: "#/components/schemas/Paging"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CurtailmentDetail"
+
+    CurtailmentDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique curtailment identifier
+        sitePath:
+          type: string
+        siteLabel:
+          type: string
+        isActive:
+          type: boolean
+          description: Whether the curtailment is currently active
+        timeZone:
+          type: string
+          description: Site timezone (IANA format)
+          example: "Europe/Madrid"
+        startsAt:
+          type: string
+          format: date-time
+          description: Start date/time (UTC)
+        endsAt:
+          type: string
+          format: date-time
+          description: End date/time (UTC)
+        power:
+          type: number
+          format: double
+          description: Power limit in MW
+        timeLeft:
+          type: integer
+          description: Time remaining in seconds
+        lastModified:
+          type: integer
+          description: Last modification timestamp (epoch seconds)
+
+    UploadCurtailmentsResponse:
+      type: object
+      properties:
+        schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadCurtailmentSchedule"
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/UploadCurtailmentError"
+
+    UploadCurtailmentSchedule:
+      type: object
+      properties:
+        row:
+          type: integer
+          description: Row number in the CSV file
+        id:
+          type: string
+          description: Assigned curtailment identifier
+        site:
+          type: string
+          description: Site name from the CSV
+        sitePath:
+          type: string
+          description: Resolved site path
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        timeZone:
+          type: string
+        power:
+          type: number
+          format: double
+          description: Power in MW
+        timeLeft:
+          type: integer
+          description: Time remaining in seconds
+
+    UploadCurtailmentError:
+      type: object
+      properties:
+        row:
+          type: integer
+          description: CSV row number with the error
+        site:
+          type: string
+          description: Site name from the CSV row
+        errorCode:
+          type: integer
+          description: |
+            Error code:
+            0=OK, 1=SiteNameDoesNotExist, 2=SiteNameDuplicated,
+            3=StartsAtInvalidDateFormat, 4=EndsAtInvalidDateFormat,
+            5=StartsAtGreaterThanEndsAt, 6=RatedPowerExceeds,
+            7=SiteNameEmpty, 8=StartsAtEmpty, 9=EndsAtEmpty, 10=PowerEmpty
+
+    Paging:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of results
+        count:
+          type: integer
+          description: Number of results in this page
+
+    SiteModel:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique site identifier (site path). Use this value as sitePath in curtailment calls.
+          example: "PARK_MyPark"
+        name:
+          type: string
+          description: Site display name
+          example: "My Wind Park"
+        assetType:
+          type: string
+          description: Asset type (WindFarm, PVSite, etc.)
+          example: "WindFarm"
+        latitude:
+          type: number
+          format: double
+          description: Latitude (WGS84)
+        longitude:
+          type: number
+          format: double
+          description: Longitude (WGS84)
+        ratedPower:
+          type: number
+          format: double
+          description: Rated power in kW
+        countryCode:
+          type: string
+          description: ISO-3166-1 alpha-2 country code
+          example: "ES"
+        countryName:
+          type: string
+          example: "Spain"
+        customerName:
+          type: string
+          description: Customer name
+        timezone:
+          type: string
+          description: IANA timezone
+          example: "Europe/Madrid"
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetModel"
+          description: Child assets (turbines, inverters, etc.)
+
+    AssetModel:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Asset identifier (asset path)
+        name:
+          type: string
+          description: Asset display name
+        assetType:
+          type: string
+          description: Asset type (WindTurbine, PVInverter, etc.)
+        siteId:
+          type: string
+          description: Parent site path
+        siteName:
+          type: string
+          description: Parent site name
+        ratedPower:
+          type: number
+          format: double
+          description: Rated power in kW

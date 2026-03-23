@@ -1,6 +1,6 @@
 # Curtailment Planner Example
 
-This directory contains example scripts in three programming languages (Python, PHP, and JavaScript) that demonstrate how to interact with ARSOS Curtailment planner API
+This directory contains example scripts in four programming languages (Python, PHP, JavaScript, and .NET/C#) that demonstrate how to interact with ARSOS Curtailment planner API
 
 1. Load configuration from a JSON file
 2. Create an API client with authentication
@@ -21,8 +21,12 @@ This directory contains example scripts in three programming languages (Python, 
 ├── javascript/
 │   ├── main.js
 │   └── package.json
-├── config.json
+├── dotnet/
+│   ├── Program.cs
+│   └── CurtailmentPlanner.csproj
+├── config.template.json
 ├── curtailment-template.csv
+├── swagger-curtailments.yaml
 └── README.md
 ```
 
@@ -81,6 +85,15 @@ SITE002,2024-01-16T14:00:00Z,2024-01-16T16:00:00Z,15.0,Grid stability
 2. Run the script:
    ```bash
    node main.js [config_path] [csv_file_path]
+   ```
+
+### .NET (C#)
+
+1. Ensure .NET 8.0 SDK is installed
+2. Run the script:
+   ```bash
+   cd dotnet
+   dotnet run -- [config_path] [csv_file_path]
    ```
 
 ## Command Line Arguments
