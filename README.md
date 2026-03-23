@@ -41,6 +41,7 @@ The main goal of this repository is to:
    - **Python**: Using `requests` library
    - **PHP**: Using cURL extension
    - **JavaScript**: Using Node.js
+   - **.NET**: Using C# with HttpClient
 
 4. **Configure your environment**:
    - Copy the `config.template.json` to `config.json`
