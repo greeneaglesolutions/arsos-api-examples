@@ -1,0 +1,341 @@
+openapi: 3.0.3
+info:
+  title: ARSOS AGC Status Request API
+  description: |
+    API for uploading and querying AGC (Automatic Generation Control) status requests
+    for UPROGs on the ARSOS platform. Data is structured as 96 quarter-hourly On/Off
+    intervals per gas day (24 hours × 4 quarter-hours = 96 positions).
+
+    ## Authentication
+
+    1. Call **POST /auth** with your credentials to obtain a `token`.
+    2. Copy the `token` value from the response.
+    3. Click the **Authorize** button (lock icon) at the top of this page and paste the token.
+    4. From that point on, all requests will automatically include the token.
+
+    ## Quarter-hourly positions
+
+    Each gas day is divided into 96 quarter-hourly intervals (positions 1–96).
+    Position 1 starts at 22:00 UTC of the **previous** calendar day.
+
+    Example for gas day **2026-04-27**:
+    - Position 1 → 2026-04-26T22:00Z – 2026-04-26T22:15Z
+    - Position 4 → 2026-04-26T22:45Z – 2026-04-26T23:00Z
+    - Position 96 → 2026-04-27T21:45Z – 2026-04-27T22:00Z
+
+  version: 1.0.0
+  contact:
+    name: GES Support
+
+servers:
+  - url: "{apiUrl}"
+    description: Configurable ARSOS server
+    variables:
+      apiUrl:
+        default: https://api.greeneaglesolutions.com
+        description: API base URL. Change this value to target a different environment.
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Auth
+    description: Authentication and token management
+  - name: AGC Status Request
+    description: Upload and query AGC status request data for UPROGs
+
+paths:
+  /auth:
+    post:
+      tags:
+        - Auth
+      summary: Login - Obtain JWT token
+      description: |
+        Authenticates the user with email and password.
+        Returns a JWT token used in all subsequent requests.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthRequest"
+            example:
+              user: "user@company.com"
+              pass: "myPassword123"
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+              example:
+                user: "user@company.com"
+                token: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyQGNvbXBhbnkuY29tIiwi..."
+                refreshToken: "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ1c2VyQGNvbXBhbnkuY29tIiwi..."
+        "401":
+          description: Invalid credentials
+
+  /api/agc-status-request/sample:
+    get:
+      tags:
+        - AGC Status Request
+      summary: Download XML template
+      description: |
+        Returns a sample XML file showing the expected format for the upload endpoint.
+        The file contains two example UPROGs (UPROG Danubio and UPROG Manzanares)
+        with 96 quarter-hourly On/Off values each.
+
+        Use this endpoint to understand the required XML structure before preparing
+        your own files.
+      operationId: getSample
+      security: []
+      responses:
+        "200":
+          description: Sample XML file
+          content:
+            application/xml:
+              schema:
+                type: string
+                format: binary
+
+  /api/agc-status-request/upload:
+    post:
+      tags:
+        - AGC Status Request
+      summary: Upload AGC status request XML
+      description: |
+        Processes an XML file containing AGC status request data for one or more UPROGs.
+
+        Each `SeriesTemporales` block in the XML represents one UPROG and must include
+        exactly 96 `Intervalo` entries (one per quarter-hour of the gas day).
+
+        The UPROG name in the XML (`UPEntrada v="..."`) must match the device label
+        registered in the ARSOS platform for your tenant.
+
+        **Response codes:**
+        - `processedCount`: number of UPROGs successfully saved
+        - `skippedCount`: number of UPROGs skipped (UPROG not found for this tenant)
+      operationId: uploadXml
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: XML file in ESIOS/REE format. Must have .xml extension.
+      responses:
+        "200":
+          description: XML processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessXmlResultDto"
+              example:
+                processedCount: 2
+                skippedCount: 0
+        "400":
+          description: No file provided, empty file, or non-XML extension
+          content:
+            text/plain:
+              examples:
+                noFile:
+                  value: "No file provided or file is empty."
+                wrongExtension:
+                  value: "File must be an XML file."
+        "401":
+          description: Unauthorized - invalid or missing JWT
+
+  /api/agc-status-request/{date}/{quarterHourly}:
+    get:
+      tags:
+        - AGC Status Request
+      summary: Get all UPROGs status for a quarter-hourly position
+      description: |
+        Returns the AGC status value for all UPROGs belonging to the authenticated
+        user's tenant, for the given gas day and quarter-hourly position.
+
+        **Value interpretation:**
+        - `1` → Status **On**
+        - `-1` → Status **Off**
+        - `null` → No data uploaded for that interval
+      operationId: getByQuarterHourly
+      parameters:
+        - name: date
+          in: path
+          required: true
+          description: Gas day date in `yyyy-MM-dd` format.
+          schema:
+            type: string
+            format: date
+          example: "2026-04-27"
+        - name: quarterHourly
+          in: path
+          required: true
+          description: Quarter-hourly position within the gas day (1–96).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 96
+          example: 1
+      responses:
+        "200":
+          description: List of quarter-hourly values for all tenant UPROGs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgcStatusQuarterHourlyValueDto"
+              example:
+                - sitePath: "UPROG Danubio"
+                  value: 1
+                - sitePath: "UPROG Manzanares"
+                  value: -1
+        "401":
+          description: Unauthorized - invalid or missing JWT
+
+  /api/agc-status-request/{sitePath}/{date}/{quarterHourly}:
+    get:
+      tags:
+        - AGC Status Request
+      summary: Get a specific UPROG status for a quarter-hourly position
+      description: |
+        Returns the AGC status value for a single UPROG identified by its site path
+        (device label), for the given gas day and quarter-hourly position.
+
+        **Value interpretation:**
+        - `1` → Status **On**
+        - `-1` → Status **Off**
+        - `null` → No data uploaded for that interval
+      operationId: getBySitePathAndQuarterHourly
+      parameters:
+        - name: sitePath
+          in: path
+          required: true
+          description: >
+            Site path (UPROG label / device name) as registered in ARSOS.
+            Must be URL-encoded if it contains spaces (e.g., `UPROG%20Danubio`).
+          schema:
+            type: string
+          example: "UPROG%20Danubio"
+        - name: date
+          in: path
+          required: true
+          description: Gas day date in `yyyy-MM-dd` format.
+          schema:
+            type: string
+            format: date
+          example: "2026-04-27"
+        - name: quarterHourly
+          in: path
+          required: true
+          description: Quarter-hourly position within the gas day (1–96).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 96
+          example: 1
+      responses:
+        "200":
+          description: Quarter-hourly status value (1, -1, or null)
+          content:
+            application/json:
+              schema:
+                type: integer
+                nullable: true
+                enum:
+                  - 1
+                  - -1
+                  - null
+              examples:
+                on:
+                  summary: Status On
+                  value: 1
+                off:
+                  summary: Status Off
+                  value: -1
+                noData:
+                  summary: No data for this interval
+                  value: null
+        "401":
+          description: Unauthorized - invalid or missing JWT
+        "404":
+          description: UPROG not found for this tenant on this date
+          content:
+            text/plain:
+              example: "AGC status for site path 'UPROG Danubio' on 2026-04-27 not found."
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from POST /auth
+
+  schemas:
+    AuthRequest:
+      type: object
+      required:
+        - user
+        - pass
+      properties:
+        user:
+          type: string
+          description: User email address
+          example: "user@company.com"
+        pass:
+          type: string
+          description: User password
+          example: "myPassword123"
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          type: string
+          description: Authenticated user email
+          example: "user@company.com"
+        token:
+          type: string
+          description: JWT token for API authentication
+        refreshToken:
+          type: string
+          description: Token used to refresh the JWT when it expires
+
+    ProcessXmlResultDto:
+      type: object
+      properties:
+        processedCount:
+          type: integer
+          description: Number of UPROGs successfully processed and saved
+          example: 2
+        skippedCount:
+          type: integer
+          description: >
+            Number of UPROGs skipped because their name was not found
+            for the authenticated tenant
+          example: 0
+
+    AgcStatusQuarterHourlyValueDto:
+      type: object
+      properties:
+        sitePath:
+          type: string
+          description: UPROG label / device name
+          example: "UPROG Danubio"
+        value:
+          type: integer
+          nullable: true
+          description: >
+            Status value: 1 (On), -1 (Off), or null (no data uploaded for this interval)
+          example: 1

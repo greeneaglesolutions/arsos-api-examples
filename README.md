@@ -25,6 +25,18 @@ The main goal of this repository is to:
 - Retrieve curtailment schedules by site IDs
 - Handle error responses and validation
 
+### 2. AGC Status Request (Regulation Files Reader)
+
+**Description**: Demonstrates how to upload AGC (Automatic Generation Control) status request files and query quarter-hourly On/Off status values per UPROG on the ARSOS platform.
+
+**Features**:
+- Load configuration from JSON files
+- Authenticate with the ARSOS API
+- Upload XML files with 96 quarter-hourly On/Off values per UPROG
+- Query the status of all UPROGs for a given gas day and quarter-hourly position
+- Query the status of a specific UPROG by site path
+- Handle upload validation errors and UPROG not found responses
+
 ## Getting Started
 
 1. **Clone the repository**:
