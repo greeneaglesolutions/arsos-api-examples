@@ -41,7 +41,7 @@ class ApiClient {
             };
 
             if (this.token) {
-                headers['Authorization'] = `Bearer ${this.token}`;
+                headers['X-Authorization'] = `Bearer ${this.token}`;
             }
 
             const requestOptions = {
@@ -88,7 +88,7 @@ class ApiClient {
             };
 
             if (this.token) {
-                headers['Authorization'] = `Bearer ${this.token}`;
+                headers['X-Authorization'] = `Bearer ${this.token}`;
             }
 
             const requestOptions = {

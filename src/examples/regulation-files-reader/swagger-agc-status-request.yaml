@@ -277,10 +277,10 @@ paths:
 components:
   securitySchemes:
     BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: JWT token obtained from POST /auth
+      type: apiKey
+      in: header
+      name: X-Authorization
+      description: "JWT token obtained from POST /auth. Value format: `Bearer <token>`"
 
   schemas:
     AuthRequest:

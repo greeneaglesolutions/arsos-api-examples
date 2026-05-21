@@ -132,7 +132,7 @@ Each gas day starts at **22:00 UTC** of the previous calendar day and ends at **
 
 ## Features
 
-- **ApiClient**: Handles HTTP requests with automatic `Authorization: Bearer {token}` header injection
+- **ApiClient**: Handles HTTP requests with automatic `X-Authorization: Bearer {token}` header injection
 - **ConfigLoader**: Loads and validates JSON configuration files
 - **Login**: Authenticates with the ARSOS API using the `/Auth` endpoint
 - **Token Management**: Automatically sets the authorization token for subsequent requests

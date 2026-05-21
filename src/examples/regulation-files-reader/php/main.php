@@ -90,7 +90,7 @@ class ApiClient {
         $headers = array_merge($headers, $additionalHeaders);
 
         if ($this->token) {
-            $headers[] = 'Authorization: Bearer ' . $this->token;
+            $headers[] = 'X-Authorization: Bearer ' . $this->token;
         }
 
         return $headers;

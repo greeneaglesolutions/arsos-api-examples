@@ -15,7 +15,7 @@ class ApiClient:
     def get(self, endpoint: str, **kwargs):
         headers = kwargs.get('headers', {})
         if self.token:
-            headers['Authorization'] = f'Bearer {self.token}'
+            headers['X-Authorization'] = f'Bearer {self.token}'
         url = f"{self.base_url}{endpoint}"
         response = requests.get(url, headers=headers, **kwargs)
         return response
@@ -23,7 +23,7 @@ class ApiClient:
     def post(self, endpoint: str, data=None, **kwargs):
         headers = kwargs.get('headers', {})
         if self.token:
-            headers['Authorization'] = f'Bearer {self.token}'
+            headers['X-Authorization'] = f'Bearer {self.token}'
         url = f"{self.base_url}{endpoint}"
         response = requests.post(url, json=data, headers=headers, **kwargs)
         return response
@@ -31,7 +31,7 @@ class ApiClient:
     def post_file(self, endpoint: str, file_path: str, **kwargs):
         headers = kwargs.get('headers', {})
         if self.token:
-            headers['Authorization'] = f'Bearer {self.token}'
+            headers['X-Authorization'] = f'Bearer {self.token}'
         url = f"{self.base_url}{endpoint}"
         with open(file_path, 'rb') as file:
             files = {'file': (file_path, file, 'application/xml')}

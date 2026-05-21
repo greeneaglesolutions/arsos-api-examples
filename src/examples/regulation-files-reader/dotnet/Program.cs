@@ -68,7 +68,7 @@ class ApiClient
         var request = new HttpRequestMessage(HttpMethod.Post, _baseUrl + endpoint);
 
         if (_token != null)
-            request.Headers.Add("Authorization", $"Bearer {_token}");
+            request.Headers.Add("X-Authorization", $"Bearer {_token}");
 
         var content = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent(File.ReadAllBytes(filePath));
@@ -89,7 +89,7 @@ class ApiClient
     private void ApplyHeaders(HttpRequestMessage request)
     {
         if (_token != null)
-            request.Headers.Add("Authorization", $"Bearer {_token}");
+            request.Headers.Add("X-Authorization", $"Bearer {_token}");
     }
 }
 
