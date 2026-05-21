@@ -78,7 +78,7 @@ paths:
         "401":
           description: Invalid credentials
 
-  /api/agc-status-request/sample:
+  /arsos-regulation-files-reader/agc-status-request/sample:
     get:
       tags:
         - AGC Status Request
@@ -101,7 +101,7 @@ paths:
                 type: string
                 format: binary
 
-  /api/agc-status-request/upload:
+  /arsos-regulation-files-reader/agc-status-request/upload:
     post:
       tags:
         - AGC Status Request
@@ -154,7 +154,7 @@ paths:
         "401":
           description: Unauthorized - invalid or missing JWT
 
-  /api/agc-status-request/{date}/{quarterHourly}:
+  /arsos-regulation-files-reader/agc-status-request/{date}/{quarterHourly}:
     get:
       tags:
         - AGC Status Request
@@ -203,7 +203,7 @@ paths:
         "401":
           description: Unauthorized - invalid or missing JWT
 
-  /api/agc-status-request/{sitePath}/{date}/{quarterHourly}:
+  /arsos-regulation-files-reader/agc-status-request/{sitePath}/{date}/{quarterHourly}:
     get:
       tags:
         - AGC Status Request

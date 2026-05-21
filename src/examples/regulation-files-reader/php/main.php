@@ -162,7 +162,7 @@ function main() {
 
         // Upload XML file
         echo "\nUploading AGC status request from: " . $xmlFilePath . "\n";
-        $uploadResponse = $apiClient->postFile("/api/agc-status-request/upload", $xmlFilePath);
+        $uploadResponse = $apiClient->postFile("/arsos-regulation-files-reader/agc-status-request/upload", $xmlFilePath);
 
         if ($uploadResponse['status_code'] == 200) {
             $uploadResult = json_decode($uploadResponse['body'], true);
@@ -179,7 +179,7 @@ function main() {
         $date = "2026-04-27";
         $quarterHourly = 1;
         echo "\nQuerying all UPROGs for {$date}, quarter-hourly position {$quarterHourly}...\n";
-        $allResponse = $apiClient->get("/api/agc-status-request/{$date}/{$quarterHourly}");
+        $allResponse = $apiClient->get("/arsos-regulation-files-reader/agc-status-request/{$date}/{$quarterHourly}");
 
         if ($allResponse['status_code'] == 200) {
             $values = json_decode($allResponse['body'], true);
@@ -198,7 +198,7 @@ function main() {
         $sitePath = "UPROG Danubio";
         echo "\nQuerying specific UPROG '{$sitePath}' for {$date}, position {$quarterHourly}...\n";
         $siteResponse = $apiClient->get(
-            "/api/agc-status-request/" . urlencode($sitePath) . "/{$date}/{$quarterHourly}"
+            "/arsos-regulation-files-reader/agc-status-request/" . urlencode($sitePath) . "/{$date}/{$quarterHourly}"
         );
 
         if ($siteResponse['status_code'] == 200) {

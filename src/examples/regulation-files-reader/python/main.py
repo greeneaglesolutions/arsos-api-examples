@@ -90,7 +90,7 @@ def main():
         # Upload XML file
         print(f"\nUploading AGC status request from: {xml_file_path}")
         upload_response = api_client.post_file(
-            "/api/agc-status-request/upload", xml_file_path
+            "/arsos-regulation-files-reader/agc-status-request/upload", xml_file_path
         )
 
         if upload_response.status_code == 200:
@@ -108,7 +108,7 @@ def main():
         quarter_hourly = 1
         print(f"\nQuerying all UPROGs for {date}, quarter-hourly position {quarter_hourly}...")
         all_response = api_client.get(
-            f"/api/agc-status-request/{date}/{quarter_hourly}"
+            f"/arsos-regulation-files-reader/agc-status-request/{date}/{quarter_hourly}"
         )
 
         if all_response.status_code == 200:
@@ -125,7 +125,7 @@ def main():
         site_path = "UPROG Danubio"
         print(f"\nQuerying specific UPROG '{site_path}' for {date}, position {quarter_hourly}...")
         site_response = api_client.get(
-            f"/api/agc-status-request/{site_path}/{date}/{quarter_hourly}"
+            f"/arsos-regulation-files-reader/agc-status-request/{site_path}/{date}/{quarter_hourly}"
         )
 
         if site_response.status_code == 200:

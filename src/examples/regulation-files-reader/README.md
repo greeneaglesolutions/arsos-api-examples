@@ -72,7 +72,7 @@ A fully populated sample file with two UPROGs is provided in `agc-status-request
 You can also download a fresh copy directly from the API:
 
 ```
-GET /api/agc-status-request/sample
+GET /arsos-regulation-files-reader/agc-status-request/sample
 ```
 
 ### Quarter-hourly positions
@@ -145,10 +145,10 @@ Each gas day starts at **22:00 UTC** of the previous calendar day and ends at **
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
 | `POST` | `/Auth` | No | Login — returns a JWT token |
-| `GET` | `/api/agc-status-request/sample` | No | Download the XML template |
-| `POST` | `/api/agc-status-request/upload` | Yes | Upload an AGC status XML file |
-| `GET` | `/api/agc-status-request/{date}/{quarterHourly}` | Yes | Get all UPROGs' status for a gas day + position |
-| `GET` | `/api/agc-status-request/{sitePath}/{date}/{quarterHourly}` | Yes | Get one UPROG's status |
+| `GET` | `/arsos-regulation-files-reader/agc-status-request/sample` | No | Download the XML template |
+| `POST` | `/arsos-regulation-files-reader/agc-status-request/upload` | Yes | Upload an AGC status XML file |
+| `GET` | `/arsos-regulation-files-reader/agc-status-request/{date}/{quarterHourly}` | Yes | Get all UPROGs' status for a gas day + position |
+| `GET` | `/arsos-regulation-files-reader/agc-status-request/{sitePath}/{date}/{quarterHourly}` | Yes | Get one UPROG's status |
 
 Full OpenAPI specification: `swagger-agc-status-request.yaml`
 
@@ -191,7 +191,7 @@ The scripts follow this workflow:
 
 1. **Configuration Loading**: Load API base URL and credentials from JSON file
 2. **Authentication**: POST to `/Auth` and obtain JWT token
-3. **XML Upload**: POST the XML file to `/api/agc-status-request/upload`
+3. **XML Upload**: POST the XML file to `/arsos-regulation-files-reader/agc-status-request/upload`
 4. **Tenant Query**: GET all UPROGs' status for a given date and quarter-hourly position
 5. **Site Query**: GET a single UPROG's status for the same date and position
 

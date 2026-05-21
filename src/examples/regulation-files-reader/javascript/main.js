@@ -188,7 +188,7 @@ async function main() {
 
         // Upload XML file
         console.log(`\nUploading AGC status request from: ${xmlFilePath}`);
-        const uploadResponse = await apiClient.postFile("/api/agc-status-request/upload", xmlFilePath);
+        const uploadResponse = await apiClient.postFile("/arsos-regulation-files-reader/agc-status-request/upload", xmlFilePath);
 
         if (uploadResponse.statusCode === 200) {
             const uploadResult = JSON.parse(uploadResponse.body);
@@ -205,7 +205,7 @@ async function main() {
         const date = "2026-04-27";
         const quarterHourly = 1;
         console.log(`\nQuerying all UPROGs for ${date}, quarter-hourly position ${quarterHourly}...`);
-        const allResponse = await apiClient.get(`/api/agc-status-request/${date}/${quarterHourly}`);
+        const allResponse = await apiClient.get(`/arsos-regulation-files-reader/agc-status-request/${date}/${quarterHourly}`);
 
         if (allResponse.statusCode === 200) {
             const values = JSON.parse(allResponse.body);
@@ -223,7 +223,7 @@ async function main() {
         const sitePath = "UPROG Danubio";
         console.log(`\nQuerying specific UPROG '${sitePath}' for ${date}, position ${quarterHourly}...`);
         const siteResponse = await apiClient.get(
-            `/api/agc-status-request/${encodeURIComponent(sitePath)}/${date}/${quarterHourly}`
+            `/arsos-regulation-files-reader/agc-status-request/${encodeURIComponent(sitePath)}/${date}/${quarterHourly}`
         );
 
         if (siteResponse.statusCode === 200) {

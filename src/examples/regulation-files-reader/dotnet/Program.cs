@@ -171,7 +171,7 @@ class Program
 
             // Upload XML file
             Console.WriteLine($"\nUploading AGC status request from: {xmlFilePath}");
-            var uploadResponse = await apiClient.PostFileAsync("/api/agc-status-request/upload", xmlFilePath);
+            var uploadResponse = await apiClient.PostFileAsync("/arsos-regulation-files-reader/agc-status-request/upload", xmlFilePath);
 
             if (uploadResponse.StatusCode == 200)
             {
@@ -193,7 +193,7 @@ class Program
             var date = "2026-04-27";
             var quarterHourly = 1;
             Console.WriteLine($"\nQuerying all UPROGs for {date}, quarter-hourly position {quarterHourly}...");
-            var allResponse = await apiClient.GetAsync($"/api/agc-status-request/{date}/{quarterHourly}");
+            var allResponse = await apiClient.GetAsync($"/arsos-regulation-files-reader/agc-status-request/{date}/{quarterHourly}");
 
             if (allResponse.StatusCode == 200)
             {
@@ -219,7 +219,7 @@ class Program
             var siteName = "UPROG Danubio";
             Console.WriteLine($"\nQuerying specific UPROG '{siteName}' for {date}, position {quarterHourly}...");
             var siteResponse = await apiClient.GetAsync(
-                $"/api/agc-status-request/{Uri.EscapeDataString(siteName)}/{date}/{quarterHourly}"
+                $"/arsos-regulation-files-reader/agc-status-request/{Uri.EscapeDataString(siteName)}/{date}/{quarterHourly}"
             );
 
             if (siteResponse.StatusCode == 200)
