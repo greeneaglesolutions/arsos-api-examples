@@ -1,0 +1,9 @@
+{
+  "api": {
+    "baseUrl": "https://api.greeneaglesolutions.com"
+  },
+  "auth": {
+    "user": "your-user@company.com",
+    "password": "your-password-here"
+  }
+}
